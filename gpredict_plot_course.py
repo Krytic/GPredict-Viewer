@@ -12,19 +12,23 @@ import sys
 import datetime
 
 if len(sys.argv) == 1:
-    sys.exit('Incorrect usage. Correct usage is: python {f} file-to-analyse'.format(f=sys.argv[0]))
+    sys.exit('Incorrect usage. Correct usage is: python {f} file-to-analyse [dpi]'.format(f=sys.argv[0]))
 
 plt.close('all')
 
 filename = sys.argv[1] + ".txt"
 
-data = np.genfromtxt(filename, dtype='U10,U8,f,f,f,f,f,f')
+dpi = 40
+if len(sys.argv) > 2:
+    dpi = int(sys.argv[2])
 
-print(type(data[0]))
+data = np.genfromtxt(filename, dtype=[('date', 'U10'), ('time', 'U8'), ('az', np.float64), ('el', np.float64), ('range', np.float64), ('lat', np.float64), ('long', np.float64), ('footp', np.float64)])
 
-lat, long = data[:,5], data[:,6]
+lat, long = data['lat'], data['long']
 
 fl = data[0]
+
+print(fl)
 
 i = filename.rfind("-")
 j = filename.rfind('/')
@@ -48,7 +52,7 @@ map.plot(x,y,zorder=100,latlon=True,marker=None,color='y',markersize=2)
 plt.title('Pass by {} (date: {}, AOS: {})'.format(satellite.upper(), fl[0], fl[1]))
 
 name = filename[:-4]
-plt.savefig(name + '-pass.png', dpi=500)
+plt.savefig(name + '-pass.png', dpi=dpi)
 
 headertext = "  Pass report for {}  ".format(satellite)
 headerlen = len(headertext)
@@ -60,10 +64,10 @@ filedata = """{header}
 
 Pass date: {date}
 AOS: ({lat}, {long}) @ {starttime}
-LOS: ({llat}, {llong})
+LOS: ({llat}, {llong}) @ {endtime}
 
 Report generated at {ctime}
-""".format(header=header,headertext=headertext,date=fl[0],starttime=fl[1],lat=fl[5],long=fl[6], ctime=datetime.datetime.now(), llat=llat, llong=llong)
+""".format(header=header,headertext=headertext,date=fl[0],starttime=fl[1],lat=fl[5],long=fl[6], ctime=datetime.datetime.now(), llat=llat, llong=llong, endtime=data['time'][-1])
 
 with(open('{}-pass-report.txt'.format(name), 'w')) as f:
     f.writelines(filedata)
