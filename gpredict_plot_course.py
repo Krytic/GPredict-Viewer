@@ -17,26 +17,21 @@ if len(sys.argv) == 1:
 plt.close('all')
 
 filename = sys.argv[1] + ".txt"
-skip = 0
-with open(filename, 'r') as f:
-    fl = f.readline()
-    if fl[0] == "-":
-        skip = 3
-        f.readline()
-        f.readline()
-        fl = f.readline()
 
-i = filename.rfind("-")
-j = filename.find('/')
-if j > 0:
-    satellite = filename[j+1:i]
-else:
-    satellite = filename[:i]
+data = np.genfromtxt(filename, dtype='U10,U8,f,f,f,f,f,f')
 
-data = np.genfromtxt(filename, skip_header=skip, dtype=float)
+print(type(data[0]))
+
 lat, long = data[:,5], data[:,6]
 
-fl = list(filter(None, fl.split(" ")))
+fl = data[0]
+
+i = filename.rfind("-")
+j = filename.rfind('/')
+if j > 0:
+    satellite = filename[j+1:i] # located in subfolder like demos
+else:
+    satellite = filename[:i] # located in same dir as this file
 
 map = Basemap(projection='ortho',lat_0=-36.8535,lon_0=174.7684,resolution='l')
 
@@ -50,7 +45,7 @@ llat, llong = lat[-1], long[-1]
 
 map.plot(x,y,zorder=100,latlon=True,marker=None,color='y',markersize=2)
 
-plt.title('Pass by {} (date: {}, start time: {})'.format(satellite.upper(), fl[0], fl[1]))
+plt.title('Pass by {} (date: {}, AOS: {})'.format(satellite.upper(), fl[0], fl[1]))
 
 name = filename[:-4]
 plt.savefig(name + '-pass.png', dpi=500)
