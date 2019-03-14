@@ -12,31 +12,30 @@ import sys
 import datetime
 
 if len(sys.argv) == 1:
-    sys.exit('Incorrect usage. Correct usage is: python {f} file-to-analyse'.format(f=sys.argv[0]))
+    sys.exit('Incorrect usage. Correct usage is: python {f} file-to-analyse [dpi]'.format(f=sys.argv[0]))
 
 plt.close('all')
 
 filename = sys.argv[1] + ".txt"
-skip = 0
-with open(filename, 'r') as f:
-    fl = f.readline()
-    if fl[0] == "-":
-        skip = 3
-        f.readline()
-        f.readline()
-        fl = f.readline()
+
+dpi = 40
+if len(sys.argv) > 2:
+    dpi = int(sys.argv[2])
+
+data = np.genfromtxt(filename, dtype=[('date', 'U10'), ('time', 'U8'), ('az', np.float64), ('el', np.float64), ('range', np.float64), ('lat', np.float64), ('long', np.float64), ('footp', np.float64)])
+
+lat, long = data['lat'], data['long']
+
+fl = data[0]
+
+print(fl)
 
 i = filename.rfind("-")
-j = filename.find('/')
+j = filename.rfind('/')
 if j > 0:
-    satellite = filename[j+1:i]
+    satellite = filename[j+1:i] # located in subfolder like demos
 else:
-    satellite = filename[:i]
-
-data = np.genfromtxt(filename, skip_header=skip, dtype=float)
-lat, long = data[:,5], data[:,6]
-
-fl = list(filter(None, fl.split(" ")))
+    satellite = filename[:i] # located in same dir as this file
 
 map = Basemap(projection='ortho',lat_0=-36.8535,lon_0=174.7684,resolution='l')
 
@@ -50,10 +49,10 @@ llat, llong = lat[-1], long[-1]
 
 map.plot(x,y,zorder=100,latlon=True,marker=None,color='y',markersize=2)
 
-plt.title('Pass by {} (date: {}, start time: {})'.format(satellite.upper(), fl[0], fl[1]))
+plt.title('Pass by {} (date: {}, AOS: {})'.format(satellite.upper(), fl[0], fl[1]))
 
 name = filename[:-4]
-plt.savefig(name + '-pass.png', dpi=500)
+plt.savefig(name + '-pass.png', dpi=dpi)
 
 headertext = "  Pass report for {}  ".format(satellite)
 headerlen = len(headertext)
@@ -65,10 +64,10 @@ filedata = """{header}
 
 Pass date: {date}
 AOS: ({lat}, {long}) @ {starttime}
-LOS: ({llat}, {llong})
+LOS: ({llat}, {llong}) @ {endtime}
 
 Report generated at {ctime}
-""".format(header=header,headertext=headertext,date=fl[0],starttime=fl[1],lat=fl[5],long=fl[6], ctime=datetime.datetime.now(), llat=llat, llong=llong)
+""".format(header=header,headertext=headertext,date=fl[0],starttime=fl[1],lat=fl[5],long=fl[6], ctime=datetime.datetime.now(), llat=llat, llong=llong, endtime=data['time'][-1])
 
 with(open('{}-pass-report.txt'.format(name), 'w')) as f:
     f.writelines(filedata)
